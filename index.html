@@ -26,7 +26,7 @@ main{max-width:1000px;margin:auto;padding:14px}
 .summary{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.pill{background:white;border:1px solid #e1e5ec;border-radius:10px;padding:8px 12px;white-space:nowrap}.pill b{font-size:16px}
 .timeline{position:relative;background:white;border:1px solid #e0e4eb;border-radius:14px;overflow:hidden;height:840px}
 .hour{height:120px;border-bottom:1px dashed #dfe3ea;position:relative}.hour span{position:absolute;left:8px;top:6px;color:#7a8494;font-size:11px}.slot{position:absolute;left:54px;right:0;top:0;height:120px;cursor:pointer}
-.task{position:absolute;left:7px;right:8px;border-radius:10px;padding:9px 10px;overflow:hidden;border-left:5px solid #2563eb;box-shadow:0 2px 8px #00000012;cursor:pointer;background:#fff}
+.freegap{position:absolute;left:62px;right:10px;color:#8993a3;font-size:10px;text-align:center;z-index:1;pointer-events:none}.task{position:absolute;left:7px;right:8px;border-radius:10px;padding:9px 10px;overflow:hidden;border-left:5px solid #2563eb;box-shadow:0 2px 8px #00000012;cursor:pointer;background:#fff}
 .task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task small{display:block;margin-top:4px;font-size:11px;color:#4f5c70}.done{opacity:.48;text-decoration:line-through}
 .modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:20}.modal.show{display:flex}
 .box{background:#fff;width:min(520px,100%);border-radius:18px 18px 0 0;padding:20px;max-height:90vh;overflow:auto}
@@ -118,12 +118,31 @@ function render(){
   let dateKey=key(selectedDate),dayTasks=tasks.filter(t=>t.date===dateKey);
   let tl=$("timeline");tl.innerHTML="";
   for(let h=8;h<15;h++){let row=document.createElement("div");row.className="hour";row.innerHTML='<span>'+String(h).padStart(2,"0")+':00</span>';row.onclick=()=>openNew(h*60);tl.appendChild(row)}
-  dayTasks.forEach(t=>{
+  const sorted=[...dayTasks].sort((a,b)=>a.start-b.start);
+  let cursor=480;
+  sorted.forEach(t=>{
+    const gap=Math.max(0,t.start-cursor);
+    if(gap>=15){
+      let g=document.createElement("div");g.className="freegap";
+      g.style.top=((cursor-480)*2+5)+"px";g.style.height=(gap*2-10)+"px";
+      g.style.lineHeight=Math.max(14,gap*2-10)+"px";
+      g.textContent="Volno "+fmt(gap);
+      tl.appendChild(g);
+    }
     let el=document.createElement("div");el.className="task"+(t.done?" done":"");el.dataset.id=t.id;
-    el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;
+    el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;el.style.zIndex=3;
     el.innerHTML='<b>'+esc(t.title)+'</b><small>'+time(t.start)+'–'+time(t.start+t.duration)+' · '+fmt(t.duration)+'</small>';
     el.onclick=e=>{e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
+    cursor=Math.max(cursor,t.start+t.duration);
   });
+  const endGap=Math.max(0,900-cursor);
+  if(endGap>=15){
+    let g=document.createElement("div");g.className="freegap";
+    g.style.top=((cursor-480)*2+5)+"px";g.style.height=(endGap*2-10)+"px";
+    g.style.lineHeight=Math.max(14,endGap*2-10)+"px";
+    g.textContent="Volno "+fmt(endGap);
+    tl.appendChild(g);
+  }
   let total=dayTasks.reduce((a,t)=>a+t.duration,0);
   $("planned").textContent=fmt(total);$("free").textContent=fmt(Math.max(0,420-total));$("done").textContent=dayTasks.filter(t=>t.done).length;
 }
