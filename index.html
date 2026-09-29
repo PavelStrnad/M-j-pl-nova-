@@ -37,7 +37,7 @@ main{max-width:1120px;margin:auto;padding:18px}
 .hour{height:120px;border-bottom:1px solid rgba(60,60,67,.10);position:relative}.hour:last-child{border-bottom:0}
 .hour span{position:absolute;left:10px;top:7px;color:var(--muted);font-size:10px;font-weight:600;width:40px}
 .slot{position:absolute;left:54px;right:0;top:0;height:120px;cursor:pointer}
-.freegap{position:absolute;left:62px;right:10px;color:#a1a1a6;font-size:10px;text-align:center;z-index:1;pointer-events:none;font-weight:500;letter-spacing:.1px}
+.nowline{position:absolute;left:0;right:0;height:2px;background:#ff3b30;z-index:6;pointer-events:none;box-shadow:0 0 0 1px rgba(255,59,48,.08)}.nowline::before{content:"";position:absolute;left:49px;top:-4px;width:9px;height:9px;border-radius:50%;background:#ff3b30}.nowlabel{position:absolute;left:7px;top:-8px;font-size:9px;font-weight:700;color:#ff3b30;background:rgba(255,255,255,.96);padding:0 3px;border-radius:4px}.freegap{position:absolute;left:62px;right:10px;color:#a1a1a6;font-size:10px;text-align:center;z-index:1;pointer-events:none;font-weight:500;letter-spacing:.1px}
 .task{position:absolute;left:60px;right:10px;border-radius:12px;padding:9px 12px;overflow:hidden;border-left:4px solid var(--blue);box-shadow:0 4px 14px rgba(0,0,0,.08);cursor:pointer;background:rgba(255,255,255,.97);z-index:3}
 .task .phone{display:block;margin-top:3px;font-size:10px;color:#007aff;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task .addr{display:block;margin-top:3px;font-size:10px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;letter-spacing:-.1px}.task small{display:block;margin-top:4px;font-size:10px;color:#6e6e73}.done{opacity:.45;text-decoration:line-through}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.32);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;z-index:20}.modal.show{display:flex}
@@ -226,9 +226,29 @@ function render(){
     g.textContent="Volno "+fmt(endGap);
     tl.appendChild(g);
   }
+  renderNowLine();
   let total=dayTasks.reduce((a,t)=>a+t.duration,0);
 }
 
+
+let nowTimer=null;
+function renderNowLine(){
+  const old=$("nowline"); if(old) old.remove();
+  const today=key(new Date());
+  if(key(selectedDate)!==today) return;
+  const now=new Date(), minutes=now.getHours()*60+now.getMinutes()+now.getSeconds()/60;
+  if(minutes<480 || minutes>900) return;
+  const el=document.createElement("div");
+  el.id="nowline"; el.className="nowline";
+  el.style.top=((minutes-480)*2)+"px";
+  const lab=document.createElement("span"); lab.className="nowlabel"; lab.textContent=time(Math.floor(minutes)); el.appendChild(lab);
+  $("timeline").appendChild(el);
+}
+function startNowClock(){
+  if(nowTimer) clearInterval(nowTimer);
+  renderNowLine();
+  nowTimer=setInterval(renderNowLine,30000);
+}
 function openNew(start=480){
   edit=null;$("modalTitle").textContent="Nový úkol";$("delete").style.display="none";
   $("taskDate").value=key(selectedDate);$("title").value="";$("address").value="";$("phone").value="";$("maps").style.display="none";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
@@ -276,6 +296,7 @@ $("timeline").ondblclick=e=>{
 };
 
 render();
+startNowClock();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>
 </body></html>
