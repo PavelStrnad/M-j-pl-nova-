@@ -58,7 +58,7 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
 <header>
   <div class="head">
     <div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div>
-    <div style="display:flex;align-items:center;gap:8px"><small id="syncStatus" style="max-width:180px;text-align:right">Pouze toto zařízení</small><button id="notifyBtn">🔔 Upozornění</button><button id="authBtn">Přihlásit Google</button><button class="primary" id="new">＋ Úkol</button></div>
+    <div style="display:flex;align-items:center;gap:8px"><small id="syncStatus" style="max-width:180px;text-align:right">Pouze toto zařízení</small><button id="notifyBtn">🔔 Upozornění</button><button id="testNotifyBtn" style="display:none">🧪 Test</button><button id="authBtn">Přihlásit Google</button><button class="primary" id="new">＋ Úkol</button></div>
   </div>
 </header>
 
@@ -96,6 +96,7 @@ import {
 import {
   getFirestore, collection, doc, getDocs, onSnapshot, setDoc, deleteDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+import { getFunctions, httpsCallable } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-functions.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD0Pv7jVDxbjqYEceizigXHa-VnDMTemlE",
@@ -108,6 +109,7 @@ const firebaseConfig = {
 const firebaseApp = initializeApp(firebaseConfig);
 const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
+const functions = getFunctions(firebaseApp,"europe-west1");
 const googleProvider = new GoogleAuthProvider();
 const VAPID_PUBLIC_KEY = "BIKn2Lr6o_nT_YJfJnufit_8yCeDdZLdyI4RWbXE9YnXeP8YDUDdxujyZv4r5bfZ0n6XhlJV5tZYQ1Cweba_yt4";
 
@@ -191,11 +193,28 @@ async function enableNotifications(){
     $("notifyBtn").textContent="🔔 Zapnuto";
     $("notifyBtn").classList.add("on");
     setSync("Upozornění zapnuta",true);
+    $("testNotifyBtn").style.display="inline-block";
   }catch(e){
     console.error("Web Push error:",e);
     setSync("Upozornění se nepodařilo zapnout",true);
     const detail=e?.message?`\n\nDetail: ${e.message}`:"";
     alert("Upozornění se nepodařilo zapnout."+detail);
+  }
+}
+
+async function sendTestNotification(){
+  if(!currentUser){alert("Nejdřív se přihlas přes Google.");return}
+  try{
+    setSync("Odesílám testovací upozornění…",true);
+    const sendTest=httpsCallable(functions,"sendTestNotification");
+    const result=await sendTest({});
+    const sent=Number(result.data?.sent||0);
+    setSync(sent>0?"Testovací upozornění odesláno":"Žádné registrované zařízení",true);
+    if(!sent) alert("Firebase nenašel žádné registrované zařízení.");
+  }catch(e){
+    console.error("Test notification error:",e);
+    alert("Testovací upozornění se nepodařilo odeslat.\n\nDetail: "+(e?.message||e));
+    setSync("Test upozornění se nepodařil",true);
   }
 }
 
@@ -209,6 +228,7 @@ async function refreshNotificationState(){
 }
 
 $("notifyBtn").onclick=enableNotifications;
+$("testNotifyBtn").onclick=sendTestNotification;
 
 $("authBtn").onclick=async()=>{
   try{

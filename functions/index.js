@@ -1,10 +1,14 @@
 const { onSchedule } = require("firebase-functions/v2/scheduler");
+const { onCall, HttpsError } = require("firebase-functions/v2/https");
 const { logger } = require("firebase-functions");
+const { defineSecret } = require("firebase-functions/params");
 const admin = require("firebase-admin");
+const webpush = require("web-push");
 
 admin.initializeApp();
 const db = admin.firestore();
-const messaging = admin.messaging();
+const VAPID_PRIVATE_KEY = defineSecret("VAPID_PRIVATE_KEY");
+const VAPID_SUBJECT = "mailto:admin@planovac-55294.firebaseapp.com";
 
 exports.sendDueReminders = onSchedule(
   {
@@ -14,6 +18,7 @@ exports.sendDueReminders = onSchedule(
     memory: "256MiB",
     timeoutSeconds: 60,
     maxInstances: 1,
+    secrets: [VAPID_PRIVATE_KEY],
   },
   async () => {
     const now = Date.now();
@@ -57,12 +62,12 @@ exports.sendDueReminders = onSchedule(
 
       try {
         const devicesSnap = await userRef.collection("devices").get();
-        const tokens = devicesSnap.docs
-          .map((d) => d.get("token"))
-          .filter((t) => typeof t === "string" && t.length > 0);
+        const subscriptions = devicesSnap.docs
+          .map((d) => ({ ref: d.ref, subscription: d.get("subscription") }))
+          .filter((d) => d.subscription && typeof d.subscription.endpoint === "string" && d.subscription.keys?.p256dh && d.subscription.keys?.auth);
 
-        if (!tokens.length) {
-          logger.info(`No notification devices for user ${uid}`);
+        if (!subscriptions.length) {
+          logger.info(`No Web Push subscriptions for user ${uid}`);
           await taskSnap.ref.update({ reminderClaimedAtMs: admin.firestore.FieldValue.delete() });
           continue;
         }
@@ -76,33 +81,37 @@ exports.sendDueReminders = onSchedule(
         if (task.phone) bodyParts.push(`☎️ ${task.phone}`);
         if (task.note) bodyParts.push(`📝 ${task.note}`);
 
-        const messages = tokens.map((token) => ({
-          token,
-          data: {
+        webpush.setVapidDetails(VAPID_SUBJECT, "BIKn2Lr6o_nT_YJfJnufit_8yCeDdZLdyI4RWbXE9YnXeP8YDUDdxujyZv4r5bfZ0n6XhlJV5tZYQ1Cweba_yt4", VAPID_PRIVATE_KEY.value());
+
+        const payload = JSON.stringify({
+          web_push: 8030,
+          notification: {
             title: "Můj plán",
             body: bodyParts.join("\n"),
-            taskId: String(taskSnap.id),
-            url: "./",
+            navigate: "./",
+            tag: String(taskSnap.id),
+            silent: false
           },
-          webpush: {
-            headers: {
-              Urgency: "high",
-            },
-          },
-        }));
-
-        const batch = await messaging.sendEach(messages);
-
-        // Remove invalid registrations.
-        const cleanup = [];
-        batch.responses.forEach((resp, i) => {
-          const code = resp.error && resp.error.code;
-          if (code === "messaging/registration-token-not-registered" || code === "messaging/invalid-registration-token") {
-            const token = tokens[i];
-            const deviceDoc = userRef.collection("devices").doc(encodeURIComponent(token));
-            cleanup.push(deviceDoc.delete().catch(() => undefined));
-          }
+          title: "Můj plán",
+          body: bodyParts.join("\n"),
+          taskId: String(taskSnap.id),
+          url: "./"
         });
+
+        let successCount = 0;
+        let failureCount = 0;
+        const cleanup = [];
+        for (const item of subscriptions) {
+          try {
+            await webpush.sendNotification(item.subscription, payload, { TTL: 3600, urgency: "high" });
+            successCount++;
+          } catch (err) {
+            failureCount++;
+            const status = err?.statusCode;
+            if (status === 404 || status === 410) cleanup.push(item.ref.delete().catch(() => undefined));
+            logger.warn(`Web Push failed for ${item.ref.path}: ${status || err?.message || err}`);
+          }
+        }
         await Promise.all(cleanup);
 
         await taskSnap.ref.update({
@@ -110,7 +119,7 @@ exports.sendDueReminders = onSchedule(
           reminderClaimedAtMs: admin.firestore.FieldValue.delete(),
         });
 
-        logger.info(`Reminder sent for ${taskSnap.ref.path}: ${batch.successCount} success, ${batch.failureCount} failed`);
+        logger.info(`Reminder sent for ${taskSnap.ref.path}: ${successCount} success, ${failureCount} failed`);
       } catch (err) {
         logger.error(`Reminder failed for ${taskSnap.ref.path}`, err);
         await taskSnap.ref.update({
@@ -118,5 +127,37 @@ exports.sendDueReminders = onSchedule(
         });
       }
     }
+  }
+);
+
+
+exports.sendTestNotification = onCall(
+  { region: "europe-west1", memory: "256MiB", timeoutSeconds: 60, secrets: [VAPID_PRIVATE_KEY] },
+  async (request) => {
+    if (!request.auth?.uid) throw new HttpsError("unauthenticated", "Nejdřív se přihlas přes Google.");
+    const uid = request.auth.uid;
+    const devicesSnap = await db.collection("users").doc(uid).collection("devices").get();
+    if (devicesSnap.empty) return { sent: 0 };
+    webpush.setVapidDetails(VAPID_SUBJECT, "BIKn2Lr6o_nT_YJfJnufit_8yCeDdZLdyI4RWbXE9YnXeP8YDUDdxujyZv4r5bfZ0n6XhlJV5tZYQ1Cweba_yt4", VAPID_PRIVATE_KEY.value());
+    const payload = JSON.stringify({
+      notification: { title: "Můj plán", body: "🔔 Testovací upozornění funguje!", tag: "test-notification", navigate: "./" },
+      title: "Můj plán", body: "🔔 Testovací upozornění funguje!", url: "./"
+    });
+    let sent = 0;
+    const cleanup = [];
+    for (const d of devicesSnap.docs) {
+      const sub = d.get("subscription");
+      if (!sub?.endpoint || !sub?.keys?.p256dh || !sub?.keys?.auth) continue;
+      try {
+        await webpush.sendNotification(sub, payload, { TTL: 300, urgency: "high" });
+        sent++;
+      } catch (err) {
+        const status = err?.statusCode;
+        logger.warn(`Test Web Push failed for ${d.ref.path}: ${status || err?.message || err}`);
+        if (status === 404 || status === 410) cleanup.push(d.ref.delete().catch(() => undefined));
+      }
+    }
+    await Promise.all(cleanup);
+    return { sent };
   }
 );
