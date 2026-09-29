@@ -38,7 +38,7 @@ main{max-width:1120px;margin:auto;padding:18px}
 .slot{position:absolute;left:54px;right:0;top:0;height:120px;cursor:pointer}
 .freegap{position:absolute;left:62px;right:10px;color:#a1a1a6;font-size:10px;text-align:center;z-index:1;pointer-events:none;font-weight:500;letter-spacing:.1px}
 .task{position:absolute;left:60px;right:10px;border-radius:12px;padding:9px 12px;overflow:hidden;border-left:4px solid var(--blue);box-shadow:0 4px 14px rgba(0,0,0,.08);cursor:pointer;background:rgba(255,255,255,.97);z-index:3}
-.task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;letter-spacing:-.1px}.task small{display:block;margin-top:4px;font-size:10px;color:#6e6e73}.done{opacity:.45;text-decoration:line-through}
+.task .addr{display:block;margin-top:3px;font-size:10px;color:#6e6e73;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-weight:650;letter-spacing:-.1px}.task small{display:block;margin-top:4px;font-size:10px;color:#6e6e73}.done{opacity:.45;text-decoration:line-through}
 .modal{position:fixed;inset:0;background:rgba(0,0,0,.32);backdrop-filter:blur(5px);-webkit-backdrop-filter:blur(5px);display:none;align-items:flex-end;justify-content:center;z-index:20}.modal.show{display:flex}
 .box{background:rgba(255,255,255,.96);width:min(540px,100%);border-radius:22px 22px 0 0;padding:22px;max-height:90vh;overflow:auto;box-shadow:0 -10px 35px rgba(0,0,0,.14)}
 .box h2{font-size:20px;letter-spacing:-.3px;margin:0 0 8px}
@@ -83,10 +83,10 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
 <div class="modal" id="modal"><div class="box">
 <h2 id="modalTitle">Nový úkol</h2>
 <label>Datum</label><input id="taskDate" type="date">
-<label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?">
+<label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?"><label>Adresa</label><input id="address" placeholder="Kam mám jet?">
 <div class="row"><div><label>Začátek</label><select id="start"></select></div><div><label>Délka</label><select id="duration">
 <option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hodina</option><option value="90">1,5 hodiny</option><option value="120">2 hodiny</option><option value="150">2,5 hodiny</option><option value="180">3 hodiny</option></select></div></div>
-<label>Barva</label><select id="color"><option value="#2563eb">Práce</option><option value="#16a34a">Osobní</option><option value="#9333ea">Důležité</option><option value="#ea580c">Schůzka</option></select>
+<button type="button" id="maps" style="display:none;margin-top:7px;width:100%">📍 Otevřít adresu v Mapách</button><label>Barva</label><select id="color"><option value="#2563eb">Práce</option><option value="#16a34a">Osobní</option><option value="#9333ea">Důležité</option><option value="#ea580c">Schůzka</option></select>
 <label>Poznámka</label><textarea id="note"></textarea>
 <div class="actions"><button class="danger" id="delete" style="display:none">Smazat</button><div><button id="cancel">Zrušit</button> <button class="primary" id="save">Uložit</button></div></div>
 </div></div>
@@ -148,7 +148,7 @@ function render(){
     }
     let el=document.createElement("div");el.className="task"+(t.done?" done":"");el.dataset.id=t.id;
     el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;el.style.zIndex=3;
-    el.innerHTML='<b>'+esc(t.title)+'</b><small>'+time(t.start)+'–'+time(t.start+t.duration)+' · '+fmt(t.duration)+'</small>';
+    el.innerHTML='<b>'+esc(t.title)+'</b>'+(t.address?'<span class="addr">📍 '+esc(t.address)+'</span>':'')+'<small>'+time(t.start)+'–'+time(t.start+t.duration)+' · '+fmt(t.duration)+'</small>';
     el.onclick=e=>{e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
     cursor=Math.max(cursor,t.start+t.duration);
   });
@@ -166,13 +166,13 @@ function render(){
 
 function openNew(start=480){
   edit=null;$("modalTitle").textContent="Nový úkol";$("delete").style.display="none";
-  $("taskDate").value=key(selectedDate);$("title").value="";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
+  $("taskDate").value=key(selectedDate);$("title").value="";$("address").value="";$("maps").style.display="none";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
   $("modal").classList.add("show");setTimeout(()=>$("title").focus(),50);
 }
 function openEdit(id){
   let t=tasks.find(x=>x.id===id);if(!t)return;
   edit=id;$("modalTitle").textContent="Upravit úkol";$("delete").style.display="block";
-  $("taskDate").value=t.date;$("title").value=t.title;$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
+  $("taskDate").value=t.date;$("title").value=t.title;$("address").value=t.address||"";$("maps").style.display=t.address?"block":"none";$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
   $("modal").classList.add("show");
 }
 function close(){$("modal").classList.remove("show")}
@@ -183,12 +183,20 @@ $("next").onclick=()=>{calendarMonth.setMonth(calendarMonth.getMonth()+1);render
 $("today").onclick=()=>{selectedDate=new Date();selectedDate.setHours(0,0,0,0);calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);render()};
 $("cancel").onclick=close;
 
+$("address").addEventListener("input",()=>{
+  $("maps").style.display=$("address").value.trim()?"block":"none";
+});
+$("maps").onclick=()=>{
+  const a=$("address").value.trim();
+  if(a) window.open("https://www.google.com/maps/search/?api=1&query="+encodeURIComponent(a),"_blank");
+};
+
 $("save").onclick=()=>{
   const title=$("title").value.trim(),date=$("taskDate").value;
   if(!title){alert("Zadej název úkolu");return}
   if(!date){alert("Vyber datum");return}
   let old=edit?tasks.find(t=>t.id===edit):null;
-  let t={id:edit||Date.now().toString(),date,start:+$("start").value,duration:+$("duration").value,title,color:$("color").value,note:$("note").value.trim(),done:old?old.done:false};
+  let t={id:edit||Date.now().toString(),date,start:+$("start").value,duration:+$("duration").value,title,address:$("address").value.trim(),color:$("color").value,note:$("note").value.trim(),done:old?old.done:false};
   if(edit)tasks=tasks.map(x=>x.id===edit?t:x);else tasks.push(t);
   selectedDate=fromKey(date);calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
   localStorage.setItem("myplan",JSON.stringify(tasks));close();render();
