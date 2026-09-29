@@ -16,6 +16,7 @@ header{background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px
 .head h1{font-size:21px;letter-spacing:-.35px;margin:0;font-weight:700}.head small{color:var(--muted);font-size:12px}
 button{border:0;border-radius:11px;padding:10px 14px;font-weight:600;font-size:14px;background:#e9e9ee;color:var(--text);cursor:pointer;transition:.15s transform,.15s background}
 button:active{transform:scale(.97)}
+#authBtn{background:rgba(118,118,128,.10);white-space:nowrap}#authBtn.signed{background:rgba(52,199,89,.12);color:#248a3d}#syncStatus{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .primary{background:var(--blue);color:white;box-shadow:0 2px 8px rgba(0,122,255,.22)}
 main{max-width:1120px;margin:auto;padding:18px}
 .calendar{background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -45,7 +46,7 @@ main{max-width:1120px;margin:auto;padding:18px}
 label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d2d2d7;border-radius:10px;background:#f9f9fb;color:var(--text);font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}textarea{min-height:65px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;justify-content:space-between;margin-top:18px}.danger{background:#ffe5e5;color:#d70015}
 @media(max-width:600px){
-  header{padding:13px 14px}.head h1{font-size:19px}main{padding:12px}
+  header{padding:13px 14px}.head h1{font-size:19px}main{padding:12px}#syncStatus{display:none}#authBtn{max-width:120px;overflow:hidden;text-overflow:ellipsis}
   .calendar{padding:10px;border-radius:16px}.day{min-height:54px;padding-top:7px}
   .timeline{height:840px;border-radius:16px}.task{left:58px;right:8px;padding:8px 10px}
   .summary{gap:7px}.pill{padding:9px 5px}
@@ -57,7 +58,7 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
 <header>
   <div class="head">
     <div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div>
-    <button class="primary" id="new">＋ Úkol</button>
+    <div style="display:flex;align-items:center;gap:8px"><small id="syncStatus" style="max-width:180px;text-align:right">Pouze toto zařízení</small><button id="authBtn">Přihlásit Google</button><button class="primary" id="new">＋ Úkol</button></div>
   </div>
 </header>
 
@@ -91,11 +92,33 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
 <div class="actions"><button class="danger" id="delete" style="display:none">Smazat</button><div><button id="cancel">Zrušit</button> <button class="primary" id="save">Uložit</button></div></div>
 </div></div>
 
-<script>
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-app.js";
+import {
+  getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-auth.js";
+import {
+  getFirestore, collection, doc, getDocs, onSnapshot, setDoc, deleteDoc, updateDoc
+} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyD0Pv7jVDxbjqYEceizigXHa-VnDMTemlE",
+  authDomain: "planovac-55294.firebaseapp.com",
+  projectId: "planovac-55294",
+  storageBucket: "planovac-55294.firebasestorage.app",
+  messagingSenderId: "945202835965",
+  appId: "1:945202835965:web:1bab0c7ffc9bf4b29c2994"
+};
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+const googleProvider = new GoogleAuthProvider();
+
 const names=["Po","Út","St","Čt","Pá","So","Ne"];
 let selectedDate=new Date();selectedDate.setHours(0,0,0,0);
 let calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
 let edit=null,tasks=JSON.parse(localStorage.getItem("myplan")||"[]");
+let currentUser=null, stopSync=null, cloudReady=false;
 const $=x=>document.getElementById(x);
 
 for(let m=480;m<900;m+=15){let o=document.createElement("option");o.value=m;o.textContent=String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");$("start").appendChild(o)}
@@ -107,6 +130,54 @@ function monthLabel(d){return new Intl.DateTimeFormat("cs-CZ",{month:"long",year
 function fmt(m){return Math.floor(m/60)+" h"+(m%60?" "+m%60+" min":"")}
 function time(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+
+
+function saveLocal(){localStorage.setItem("myplan",JSON.stringify(tasks))}
+function taskRef(id){return doc(db,"users",currentUser.uid,"tasks",String(id))}
+async function cloudSet(t){if(!currentUser||!cloudReady)return;await setDoc(taskRef(t.id),t)}
+async function cloudDelete(id){if(!currentUser||!cloudReady)return;await deleteDoc(taskRef(id))}
+function setSync(text, signed=false){$("syncStatus").textContent=text;$("authBtn").classList.toggle("signed",signed)}
+
+$("authBtn").onclick=async()=>{
+  try{
+    if(currentUser){await signOut(auth);return}
+    setSync("Přihlašuji…");
+    await signInWithPopup(auth,googleProvider);
+  }catch(e){
+    console.error(e);
+    setSync("Přihlášení se nepodařilo");
+    alert("Přihlášení přes Google se nepodařilo. Zkontroluj, že je ve Firebase zapnuté Google přihlášení.");
+  }
+};
+
+onAuthStateChanged(auth,async user=>{
+  if(stopSync){stopSync();stopSync=null}
+  currentUser=user;cloudReady=false;
+  if(!user){setSync("Pouze toto zařízení");$("authBtn").textContent="Přihlásit Google";render();return}
+  $("authBtn").textContent="Odhlásit";
+  setSync("Synchronizuji…",true);
+  try{
+    const col=collection(db,"users",user.uid,"tasks");
+    const first=await getDocs(col);
+    if(first.empty && tasks.length){
+      for(const t of tasks) await setDoc(doc(col,String(t.id)),t);
+    }else if(!first.empty){
+      tasks=first.docs.map(d=>({id:d.id,...d.data()}));
+      saveLocal();render();
+    }
+    cloudReady=true;
+    stopSync=onSnapshot(col,snap=>{
+      tasks=snap.docs.map(d=>({id:d.id,...d.data()}));
+      saveLocal();render();
+      setSync("Synchronizováno",true);
+    },err=>{
+      console.error(err);setSync("Chyba synchronizace",true);
+    });
+  }catch(e){
+    console.error(e);setSync("Cloud není dostupný",true);
+    alert("Firebase se nepodařilo připojit. Zkontroluj, že máš vytvořenou Firestore databázi a správná pravidla.");
+  }
+});
 
 function renderCalendar(){
   $("monthLabel").textContent=monthLabel(calendarMonth);
@@ -149,7 +220,7 @@ function render(){
     let el=document.createElement("div");el.className="task"+(t.done?" done":"");el.dataset.id=t.id;
     el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;el.style.zIndex=3;
     el.innerHTML='<b>'+esc(t.title)+'</b>'+(t.address?'<span class="addr">📍 '+esc(t.address)+'</span>':'')+(t.phone?'<a class="phone" href="tel:'+encodeURIComponent(t.phone)+'">☎️ '+esc(t.phone)+'</a>':'')+'<small>'+time(t.start)+'–'+time(t.start+t.duration)+' · '+fmt(t.duration)+'</small>';
-    el.onclick=e=>{e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
+    el.onclick=e=>{if(e.target.closest("a"))return;e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
     cursor=Math.max(cursor,t.start+t.duration);
   });
   const endGap=Math.max(0,900-cursor);
@@ -199,15 +270,15 @@ $("save").onclick=()=>{
   let t={id:edit||Date.now().toString(),date,start:+$("start").value,duration:+$("duration").value,title,address:$("address").value.trim(),phone:$("phone").value.trim(),color:$("color").value,note:$("note").value.trim(),done:old?old.done:false};
   if(edit)tasks=tasks.map(x=>x.id===edit?t:x);else tasks.push(t);
   selectedDate=fromKey(date);calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
-  localStorage.setItem("myplan",JSON.stringify(tasks));close();render();
+  saveLocal();close();render();if(currentUser&&cloudReady) cloudSet(t).catch(e=>console.error(e));
 };
 
 $("delete").onclick=()=>{
-  if(edit&&confirm("Smazat úkol?")){tasks=tasks.filter(t=>t.id!==edit);localStorage.setItem("myplan",JSON.stringify(tasks));close();render();}
+  if(edit&&confirm("Smazat úkol?")){const id=edit;tasks=tasks.filter(t=>t.id!==id);saveLocal();close();render();if(currentUser&&cloudReady) cloudDelete(id).catch(e=>console.error(e));}
 };
 
 $("timeline").ondblclick=e=>{
-  let el=e.target.closest(".task");if(el){let t=tasks.find(x=>x.id===el.dataset.id);if(t){t.done=!t.done;localStorage.setItem("myplan",JSON.stringify(tasks));render()}}
+  let el=e.target.closest(".task");if(el){let t=tasks.find(x=>x.id===el.dataset.id);if(t){t.done=!t.done;saveLocal();render();if(currentUser&&cloudReady) updateDoc(taskRef(t.id),{done:t.done}).catch(e=>console.error(e));}}
 };
 
 render();
