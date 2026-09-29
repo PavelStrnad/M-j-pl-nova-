@@ -5,111 +5,168 @@
 <meta name="theme-color" content="#2563eb"><link rel="manifest" href="manifest.json">
 <title>Můj plán</title>
 <style>
-*{box-sizing:border-box}body{margin:0;background:#f5f7fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+*{box-sizing:border-box}
+body{margin:0;background:#f5f7fb;color:#172033;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
 header{background:#fff;border-bottom:1px solid #e2e6ed;padding:15px;position:sticky;top:0;z-index:5}
-.head{max-width:1000px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:8px}.head h1{font-size:22px;margin:0}.head small{color:#727c8c}
-button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;background:#e8edf5;color:#172033}.primary{background:#2563eb;color:white}
-main{max-width:1000px;margin:auto;padding:14px}.days{display:flex;gap:7px;overflow:auto;margin-bottom:12px}.daybtn{min-width:82px}.daybtn.active{background:#2563eb;color:white}
+.head{max-width:1000px;margin:auto;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.head h1{font-size:22px;margin:0}.head small{color:#727c8c}
+button{border:0;border-radius:10px;padding:10px 14px;font-weight:700;font-size:14px;background:#e8edf5;color:#172033;cursor:pointer}
+.primary{background:#2563eb;color:white}
+main{max-width:1000px;margin:auto;padding:14px}
+.calendar{background:#fff;border:1px solid #e0e4eb;border-radius:14px;padding:10px;margin-bottom:12px}
+.calhead{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.calhead h2{font-size:18px;margin:0;text-transform:capitalize}
+.calnav{display:flex;gap:6px}.calnav button{min-width:44px;padding:9px}
+.weeknames,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:3px}
+.weeknames div{text-align:center;color:#7a8494;font-size:11px;font-weight:700;padding:5px 0}
+.day{min-width:0;min-height:52px;padding:6px 4px;border-radius:9px;background:#f5f7fb;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:3px}
+.day.muted{opacity:.38}.day.today{box-shadow:inset 0 0 0 1px #9bbcff}
+.day.selected{background:#2563eb;color:white}.day.selected .count{color:white}
+.daynum{font-weight:700;font-size:14px}.count{font-size:9px;color:#6b7280;line-height:1}
 .summary{display:flex;gap:8px;overflow:auto;margin-bottom:12px}.pill{background:white;border:1px solid #e1e5ec;border-radius:10px;padding:8px 12px;white-space:nowrap}.pill b{font-size:16px}
 .timeline{position:relative;background:white;border:1px solid #e0e4eb;border-radius:14px;overflow:hidden;height:840px}
 .hour{height:120px;border-bottom:1px dashed #dfe3ea;position:relative}.hour span{position:absolute;left:8px;top:6px;color:#7a8494;font-size:11px}.slot{position:absolute;left:54px;right:0;top:0;height:120px;cursor:pointer}
-.task{position:absolute;left:7px;right:8px;border-radius:10px;padding:9px 10px;overflow:hidden;border-left:5px solid #2563eb;box-shadow:0 2px 8px #00000012;cursor:pointer}.task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task small{display:block;margin-top:4px;font-size:11px;color:#4f5c70}.done{opacity:.48;text-decoration:line-through}
-.modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:20}.modal.show{display:flex}.box{background:#fff;width:min(520px,100%);border-radius:18px 18px 0 0;padding:20px;max-height:90vh;overflow:auto}label{display:block;font-size:12px;font-weight:700;margin:11px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #d6dce5;border-radius:9px;font:inherit}textarea{min-height:65px}.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions{display:flex;justify-content:space-between;margin-top:16px}.danger{background:#fee2e2;color:#c62828}
-@media(max-width:600px){.head{align-items:flex-start}.head h1{font-size:20px}.head button{padding:9px 10px;font-size:13px}}
+.task{position:absolute;left:7px;right:8px;border-radius:10px;padding:9px 10px;overflow:hidden;border-left:5px solid #2563eb;box-shadow:0 2px 8px #00000012;cursor:pointer;background:#fff}
+.task b{display:block;font-size:14px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.task small{display:block;margin-top:4px;font-size:11px;color:#4f5c70}.done{opacity:.48;text-decoration:line-through}
+.modal{position:fixed;inset:0;background:#0007;display:none;align-items:flex-end;justify-content:center;z-index:20}.modal.show{display:flex}
+.box{background:#fff;width:min(520px,100%);border-radius:18px 18px 0 0;padding:20px;max-height:90vh;overflow:auto}
+label{display:block;font-size:12px;font-weight:700;margin:11px 0 5px}input,select,textarea{width:100%;padding:11px;border:1px solid #d6dce5;border-radius:9px;font:inherit}textarea{min-height:65px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:9px}.actions{display:flex;justify-content:space-between;margin-top:16px}.danger{background:#fee2e2;color:#c62828}
+@media(max-width:600px){.head{align-items:flex-start}.head h1{font-size:20px}.head button{padding:9px 10px;font-size:13px}.day{min-height:48px}.weeknames div{font-size:10px}}
 @media(min-width:700px){.modal{align-items:center}.box{border-radius:16px}}
-</style></head>
+</style>
+</head>
 <body>
-<header><div class="head"><div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div><button class="primary" id="new">＋ Úkol</button></div><div style="max-width:1000px;margin:10px auto 0;display:flex;gap:7px;overflow:auto"><div class="days" id="days" style="margin:0"></div></div></header>
-<main><div class="summary"><div class="pill"><b id="planned">0 h</b> naplánováno</div><div class="pill"><b id="free">7 h</b> volno</div><div class="pill"><b id="done">0</b> hotovo</div></div><div class="timeline" id="timeline"></div></main>
+<header>
+  <div class="head">
+    <div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div>
+    <button class="primary" id="new">＋ Úkol</button>
+  </div>
+</header>
+
+<main>
+  <section class="calendar">
+    <div class="calhead">
+      <button id="today">Dnes</button>
+      <h2 id="monthLabel"></h2>
+      <div class="calnav"><button id="prev" aria-label="Předchozí měsíc">‹</button><button id="next" aria-label="Další měsíc">›</button></div>
+    </div>
+    <div class="weeknames"><div>Po</div><div>Út</div><div>St</div><div>Čt</div><div>Pá</div><div>So</div><div>Ne</div></div>
+    <div class="grid" id="calendarGrid"></div>
+  </section>
+
+  <div class="summary">
+    <div class="pill"><b id="planned">0 h</b> naplánováno</div>
+    <div class="pill"><b id="free">7 h</b> volno</div>
+    <div class="pill"><b id="done">0</b> hotovo</div>
+  </div>
+  <div class="timeline" id="timeline"></div>
+</main>
 
 <div class="modal" id="modal"><div class="box">
 <h2 id="modalTitle">Nový úkol</h2>
-<label>Datum</label><input id="taskDate" type="date"><label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?">
-<div class="row"><div><label>Začátek</label><select id="start"></select></div><div><label>Délka</label><select id="duration"><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hodina</option><option value="90">1,5 hodiny</option><option value="120">2 hodiny</option><option value="150">2,5 hodiny</option><option value="180">3 hodiny</option></select></div></div>
+<label>Datum</label><input id="taskDate" type="date">
+<label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?">
+<div class="row"><div><label>Začátek</label><select id="start"></select></div><div><label>Délka</label><select id="duration">
+<option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hodina</option><option value="90">1,5 hodiny</option><option value="120">2 hodiny</option><option value="150">2,5 hodiny</option><option value="180">3 hodiny</option></select></div></div>
 <label>Barva</label><select id="color"><option value="#2563eb">Práce</option><option value="#16a34a">Osobní</option><option value="#9333ea">Důležité</option><option value="#ea580c">Schůzka</option></select>
 <label>Poznámka</label><textarea id="note"></textarea>
 <div class="actions"><button class="danger" id="delete" style="display:none">Smazat</button><div><button id="cancel">Zrušit</button> <button class="primary" id="save">Uložit</button></div></div>
 </div></div>
+
 <script>
 const names=["Po","Út","St","Čt","Pá","So","Ne"];
-let selectedDate=new Date(); selectedDate.setHours(0,0,0,0);
+let selectedDate=new Date();selectedDate.setHours(0,0,0,0);
+let calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
 let edit=null,tasks=JSON.parse(localStorage.getItem("myplan")||"[]");
 const $=x=>document.getElementById(x);
+
 for(let m=480;m<900;m+=15){let o=document.createElement("option");o.value=m;o.textContent=String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0");$("start").appendChild(o)}
 
 function key(d){return d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0")}
 function fromKey(k){let [y,m,d]=k.split("-").map(Number);return new Date(y,m-1,d)}
 function label(d){return new Intl.DateTimeFormat("cs-CZ",{weekday:"long",day:"numeric",month:"long",year:"numeric"}).format(d)}
+function monthLabel(d){return new Intl.DateTimeFormat("cs-CZ",{month:"long",year:"numeric"}).format(d)}
 function fmt(m){return Math.floor(m/60)+" h"+(m%60?" "+m%60+" min":"")}
 function time(m){return String(Math.floor(m/60)).padStart(2,"0")+":"+String(m%60).padStart(2,"0")}
 function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
 
+function renderCalendar(){
+  $("monthLabel").textContent=monthLabel(calendarMonth);
+  const grid=$("calendarGrid");grid.innerHTML="";
+  const first=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1);
+  const mondayIndex=(first.getDay()+6)%7;
+  const daysInMonth=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth()+1,0).getDate();
+  const prevDays=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),0).getDate();
+  const total=Math.ceil((mondayIndex+daysInMonth)/7)*7;
+  const todayKey=key(new Date());
+  for(let i=0;i<total;i++){
+    let dayNum=i-mondayIndex+1;
+    let d=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),dayNum);
+    let current=d.getMonth()===calendarMonth.getMonth();
+    let b=document.createElement("button");b.type="button";b.className="day"+(current?"":" muted")+(key(d)===todayKey?" today":"")+(key(d)===key(selectedDate)?" selected":"");
+    let count=tasks.filter(t=>t.date===key(d)).length;
+    b.innerHTML='<span class="daynum">'+d.getDate()+'</span>'+(count?'<span class="count">'+count+' úkol'+(count===1?'':'y')+'</span>':'');
+    b.onclick=()=>{selectedDate=d;calendarMonth=new Date(d.getFullYear(),d.getMonth(),1);render()};
+    grid.appendChild(b);
+  }
+}
+
 function render(){
- $("currentLabel").textContent=label(selectedDate);
-
- // Show the selected week around the chosen date, with the selected day highlighted.
- const monday=new Date(selectedDate); monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
- const days=$("days"); days.innerHTML="";
- for(let i=0;i<7;i++){
-   let d=new Date(monday); d.setDate(monday.getDate()+i);
-   let b=document.createElement("button"); b.className="daybtn"+(key(d)===key(selectedDate)?" active":"");
-   b.textContent=names[i]; b.title=label(d); b.onclick=()=>{selectedDate=d;render()};
-   days.appendChild(b);
- }
-
- let dateKey=key(selectedDate), dayTasks=tasks.filter(t=>t.date===dateKey);
- let tl=$("timeline");tl.innerHTML="";
- for(let h=8;h<15;h++){let row=document.createElement("div");row.className="hour";row.innerHTML=`<span>${String(h).padStart(2,"0")}:00</span>`;row.onclick=()=>openNew(h*60);tl.appendChild(row)}
- dayTasks.forEach(t=>{
-   let el=document.createElement("div");el.className="task"+(t.done?" done":"");el.dataset.id=t.id;
-   el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;
-   let end=t.start+t.duration;
-   el.innerHTML=`<b>${esc(t.title)}</b><small>${time(t.start)}–${time(end)} · ${fmt(t.duration)}</small>`;
-   el.onclick=e=>{e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
- });
- let total=dayTasks.reduce((a,t)=>a+t.duration,0);
- $("planned").textContent=fmt(total);$("free").textContent=fmt(Math.max(0,420-total));
- $("done").textContent=dayTasks.filter(t=>t.done).length;
+  $("currentLabel").textContent=label(selectedDate);
+  renderCalendar();
+  let dateKey=key(selectedDate),dayTasks=tasks.filter(t=>t.date===dateKey);
+  let tl=$("timeline");tl.innerHTML="";
+  for(let h=8;h<15;h++){let row=document.createElement("div");row.className="hour";row.innerHTML='<span>'+String(h).padStart(2,"0")+':00</span>';row.onclick=()=>openNew(h*60);tl.appendChild(row)}
+  dayTasks.forEach(t=>{
+    let el=document.createElement("div");el.className="task"+(t.done?" done":"");el.dataset.id=t.id;
+    el.style.top=((t.start-480)*2)+"px";el.style.height=Math.max(30,t.duration*2-4)+"px";el.style.borderLeftColor=t.color;
+    el.innerHTML='<b>'+esc(t.title)+'</b><small>'+time(t.start)+'–'+time(t.start+t.duration)+' · '+fmt(t.duration)+'</small>';
+    el.onclick=e=>{e.stopPropagation();openEdit(t.id)};tl.appendChild(el);
+  });
+  let total=dayTasks.reduce((a,t)=>a+t.duration,0);
+  $("planned").textContent=fmt(total);$("free").textContent=fmt(Math.max(0,420-total));$("done").textContent=dayTasks.filter(t=>t.done).length;
 }
 
 function openNew(start=480){
- edit=null;$("modalTitle").textContent="Nový úkol";$("delete").style.display="none";
- $("taskDate").value=key(selectedDate);$("title").value="";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
- $("modal").classList.add("show");setTimeout(()=>$("title").focus(),50);
+  edit=null;$("modalTitle").textContent="Nový úkol";$("delete").style.display="none";
+  $("taskDate").value=key(selectedDate);$("title").value="";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
+  $("modal").classList.add("show");setTimeout(()=>$("title").focus(),50);
 }
 function openEdit(id){
- let t=tasks.find(x=>x.id===id);if(!t)return;
- edit=id;$("modalTitle").textContent="Upravit úkol";$("delete").style.display="block";
- $("taskDate").value=t.date;$("title").value=t.title;$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
- $("modal").classList.add("show");
+  let t=tasks.find(x=>x.id===id);if(!t)return;
+  edit=id;$("modalTitle").textContent="Upravit úkol";$("delete").style.display="block";
+  $("taskDate").value=t.date;$("title").value=t.title;$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
+  $("modal").classList.add("show");
 }
 function close(){$("modal").classList.remove("show")}
 
 $("new").onclick=()=>openNew();
-$("dateBtn").onclick=()=>{$("datePicker").showPicker ? $("datePicker").showPicker() : $("datePicker").click()};
-$("datePicker").onchange=e=>{if(e.target.value){selectedDate=fromKey(e.target.value);render()}};
+$("prev").onclick=()=>{calendarMonth.setMonth(calendarMonth.getMonth()-1);renderCalendar()};
+$("next").onclick=()=>{calendarMonth.setMonth(calendarMonth.getMonth()+1);renderCalendar()};
+$("today").onclick=()=>{selectedDate=new Date();selectedDate.setHours(0,0,0,0);calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);render()};
 $("cancel").onclick=close;
 
 $("save").onclick=()=>{
- const title=$("title").value.trim();
- if(!title){alert("Zadej název úkolu");return}
- let old=edit?tasks.find(t=>t.id===edit):null;
- let t={id:edit||Date.now().toString(),date:key(selectedDate),start:+$("start").value,duration:+$("duration").value,title,color:$("color").value,note:$("note").value,done:old?old.done:false};
- if(edit)tasks=tasks.map(x=>x.id===edit?t:x);else tasks.push(t);
- localStorage.setItem("myplan",JSON.stringify(tasks));close();render();
+  const title=$("title").value.trim(),date=$("taskDate").value;
+  if(!title){alert("Zadej název úkolu");return}
+  if(!date){alert("Vyber datum");return}
+  let old=edit?tasks.find(t=>t.id===edit):null;
+  let t={id:edit||Date.now().toString(),date,start:+$("start").value,duration:+$("duration").value,title,color:$("color").value,note:$("note").value.trim(),done:old?old.done:false};
+  if(edit)tasks=tasks.map(x=>x.id===edit?t:x);else tasks.push(t);
+  selectedDate=fromKey(date);calendarMonth=new Date(selectedDate.getFullYear(),selectedDate.getMonth(),1);
+  localStorage.setItem("myplan",JSON.stringify(tasks));close();render();
 };
 
 $("delete").onclick=()=>{
- if(edit&&confirm("Smazat úkol?")){
-   tasks=tasks.filter(t=>t.id!==edit);localStorage.setItem("myplan",JSON.stringify(tasks));close();render();
- }
+  if(edit&&confirm("Smazat úkol?")){tasks=tasks.filter(t=>t.id!==edit);localStorage.setItem("myplan",JSON.stringify(tasks));close();render();}
 };
 
 $("timeline").ondblclick=e=>{
- let el=e.target.closest(".task");
- if(el){let t=tasks.find(x=>x.id===el.dataset.id);if(t){t.done=!t.done;localStorage.setItem("myplan",JSON.stringify(tasks));render()}}
+  let el=e.target.closest(".task");if(el){let t=tasks.find(x=>x.id===el.dataset.id);if(t){t.done=!t.done;localStorage.setItem("myplan",JSON.stringify(tasks));render()}}
 };
 
 render();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
-</script></body></html>
+</script>
+</body></html>
