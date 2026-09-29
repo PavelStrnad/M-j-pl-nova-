@@ -1,0 +1,14 @@
+{
+  "name": "muj-plan-functions",
+  "description": "Můj plán - scheduled push reminders",
+  "private": true,
+  "engines": {
+    "node": "20"
+  },
+  "main": "index.js",
+  "dependencies": {
+    "firebase-admin": "^13.5.0",
+    "firebase-functions": "^6.4.0",
+    "web-push": "^3.6.7"
+  }
+}

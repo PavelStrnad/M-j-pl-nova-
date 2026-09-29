@@ -96,9 +96,6 @@ import {
 import {
   getFirestore, collection, doc, getDocs, onSnapshot, setDoc, deleteDoc, updateDoc
 } from "https://www.gstatic.com/firebasejs/12.19.0/firebase-firestore.js";
-import {
-  getMessaging, getToken
-} from "https://www.gstatic.com/firebasejs/12.19.0/firebase-messaging.js";
 
 const firebaseConfig = {
   apiKey: "AIzaSyD0Pv7jVDxbjqYEceizigXHa-VnDMTemlE",
@@ -113,7 +110,6 @@ const auth = getAuth(firebaseApp);
 const db = getFirestore(firebaseApp);
 const googleProvider = new GoogleAuthProvider();
 const VAPID_PUBLIC_KEY = "BIKn2Lr6o_nT_YJfJnufit_8yCeDdZLdyI4RWbXE9YnXeP8YDUDdxujyZv4r5bfZ0n6XhlJV5tZYQ1Cweba_yt4";
-const messaging = getMessaging(firebaseApp);
 
 const names=["Po","Út","St","Čt","Pá","So","Ne"];
 let selectedDate=new Date();selectedDate.setHours(0,0,0,0);
@@ -140,27 +136,66 @@ async function cloudDelete(id){if(!currentUser||!cloudReady)return;await deleteD
 function setSync(text, signed=false){$("syncStatus").textContent=text;$("authBtn").classList.toggle("signed",signed)}
 
 
+function urlBase64ToUint8Array(base64String){
+  const padding="=".repeat((4-base64String.length%4)%4);
+  const base64=(base64String+padding).replace(/-/g,"+").replace(/_/g,"/");
+  const raw=atob(base64);
+  const output=new Uint8Array(raw.length);
+  for(let i=0;i<raw.length;i++)output[i]=raw.charCodeAt(i);
+  return output;
+}
+
+function isHomeScreenApp(){
+  return window.matchMedia?.("(display-mode: standalone)").matches || window.navigator.standalone === true;
+}
+
 async function enableNotifications(){
   if(!currentUser){alert("Nejdřív se přihlas přes Google.");return}
-  if(!("Notification" in window) || !("serviceWorker" in navigator)){alert("Tento prohlížeč nepodporuje webová upozornění.");return}
+  if(!("Notification" in window) || !("serviceWorker" in navigator) || !("PushManager" in window)){
+    alert("Tento prohlížeč nepodporuje webová upozornění.");return
+  }
+  if(!isHomeScreenApp()){
+    alert("Nejdřív přidej Můj plán na plochu a potom ho spusť z ikony na ploše.");return
+  }
   if(VAPID_PUBLIC_KEY === "VAPID_PUBLIC_KEY_HERE"){
-    alert("Ještě je potřeba do aplikace vložit VAPID klíč z Firebase → Project settings → Cloud Messaging → Web Push certificates.");
-    return;
+    alert("Ještě je potřeba do aplikace vložit veřejný VAPID klíč.");return
   }
   try{
     setSync("Povoluji upozornění…",true);
     const permission=Notification.permission === "granted" ? "granted" : await Notification.requestPermission();
-    if(permission!=="granted"){setSync("Upozornění nejsou povolená",true);return}
-    const swReg=await navigator.serviceWorker.register("firebase-messaging-sw.js");
-    const token=await getToken(messaging,{vapidKey:VAPID_PUBLIC_KEY,serviceWorkerRegistration:swReg});
-    if(!token) throw new Error("FCM token nebyl získán");
-    const deviceId=encodeURIComponent(token);
-    await setDoc(doc(db,"users",currentUser.uid,"devices",deviceId),{token,platform:navigator.userAgent,createdAt:Date.now(),updatedAt:Date.now()},{merge:true});
-    $("notifyBtn").textContent="🔔 Zapnuto";$("notifyBtn").classList.add("on");
+    if(permission!=="granted"){
+      setSync("Upozornění nejsou povolená",true);
+      return
+    }
+
+    const swReg=await navigator.serviceWorker.register("sw.js");
+    await navigator.serviceWorker.ready;
+    let subscription=await swReg.pushManager.getSubscription();
+    if(!subscription){
+      subscription=await swReg.pushManager.subscribe({
+        userVisibleOnly:true,
+        applicationServerKey:urlBase64ToUint8Array(VAPID_PUBLIC_KEY)
+      });
+    }
+    const subJson=subscription.toJSON();
+    if(!subJson?.endpoint || !subJson?.keys?.p256dh || !subJson?.keys?.auth){
+      throw new Error("Push subscription je neúplný");
+    }
+    const deviceId=encodeURIComponent(subJson.endpoint);
+    await setDoc(doc(db,"users",currentUser.uid,"devices",deviceId),{
+      subscription:subJson,
+      platform:navigator.userAgent,
+      createdAt:Date.now(),
+      updatedAt:Date.now()
+    },{merge:true});
+    $("notifyBtn").textContent="🔔 Zapnuto";
+    $("notifyBtn").classList.add("on");
     setSync("Upozornění zapnuta",true);
   }catch(e){
-    console.error(e);setSync("Upozornění se nepodařilo zapnout",true);
-    alert("Upozornění se nepodařilo zapnout. Na iPhonu musí být aplikace přidaná na plochu a musíš povolit oznámení.");
+    console.error("Web Push error:",e);
+    setSync("Upozornění se nepodařilo zapnout",true);
+    const detail=e?.message?`\n\nDetail: ${e.message}`:"";
+    alert("Upozornění se nepodařilo zapnout."+detail);
   }
 }
 

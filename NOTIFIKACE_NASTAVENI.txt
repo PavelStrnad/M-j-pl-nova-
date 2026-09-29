@@ -1,10 +1,23 @@
-MŮJ PLÁN – PUSH NOTIFIKACE
+MŮJ PLÁN – WEB PUSH NOTIFIKACE (v17)
 
-1) Firebase: Project settings → Cloud Messaging → Web Push certificates → Generate key pair.
-2) Do index.html je už vložen veřejný VAPID key. Private key nikam neposílej.
-3) Firebase → Authentication: Google musí být Enabled.
-4) Firebase → Firestore Database: databáze musí být vytvořená a pravidla publikovaná.
-5) Ve Firebase je potřeba zapnout billing/Blaze pro Cloud Functions. Doporučuji nastavit budget alerts.
-6) Na PC v kořenu projektu spusť: npm install -g firebase-tools ; firebase login ; firebase deploy --only functions,firestore
-7) iPhone: aplikaci přidej na plochu, přihlas Google, klikni 🔔 Upozornění a povol oznámení.
-8) U úkolu vyber připomenutí (5/10/15/30/60 min předem). Funkce kontroluje připomínky každou minutu.
+Tato verze používá standardní Web Push místo Firebase Cloud Messaging pro web. To je důležité hlavně pro iPhone/iOS Home Screen web app.
+
+1) Firebase: Project settings → Cloud Messaging → Web Push certificates.
+2) Veřejný VAPID klíč je už vložený v index.html. Pokud vytvoříš nový VAPID pár, nahraď jím VAPID_PUBLIC_KEY v index.html.
+3) Soukromý VAPID klíč nikam neposílej. Nastav ho jako Firebase Functions secret:
+   firebase functions:secrets:set VAPID_PRIVATE_KEY
+   a vlož private key z VAPID páru.
+4) V kořenu projektu spusť:
+   npm install -g firebase-tools
+   firebase login
+   cd functions
+   npm install
+   cd ..
+   firebase deploy --only functions,firestore
+5) iPhone: Můj plán přidej na plochu, spusť ho z ikony, přihlas Google a klikni 🔔 Upozornění. iOS musí zobrazit/používat oprávnění pro Web Push.
+6) U úkolu vyber připomenutí (5/10/15/30/60 min předem). Cloud Function kontroluje připomínky každou minutu.
+
+POZNÁMKA:
+- Předchozí v16 ukládala FCM token. v17 ukládá standardní PushSubscription (endpoint + p256dh + auth).
+- Staré FCM device dokumenty můžeš nechat; v17 je nepoužívá.
+- Pokud už nemáš původní private VAPID key k veřejnému klíči v index.html, vygeneruj nový VAPID pár a vlož nový public key do index.html; private key pak nastav jako VAPID_PRIVATE_KEY secret.
