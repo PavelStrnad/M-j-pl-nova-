@@ -19,12 +19,12 @@ main{max-width:1000px;margin:auto;padding:14px}.days{display:flex;gap:7px;overfl
 @media(min-width:700px){.modal{align-items:center}.box{border-radius:16px}}
 </style></head>
 <body>
-<header><div class="head"><div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div><div style="display:flex;gap:7px;align-items:center"><button id="dateBtn">📅 Vybrat datum</button><button class="primary" id="new">＋ Úkol</button></div></div><input id="datePicker" type="date" style="position:absolute;opacity:0;pointer-events:none;width:1px;height:1px"><div style="max-width:1000px;margin:10px auto 0;display:flex;gap:7px;overflow:auto"><div class="days" id="days" style="margin:0"></div></div></header>
+<header><div class="head"><div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div><button class="primary" id="new">＋ Úkol</button></div><div style="max-width:1000px;margin:10px auto 0;display:flex;gap:7px;overflow:auto"><div class="days" id="days" style="margin:0"></div></div></header>
 <main><div class="summary"><div class="pill"><b id="planned">0 h</b> naplánováno</div><div class="pill"><b id="free">7 h</b> volno</div><div class="pill"><b id="done">0</b> hotovo</div></div><div class="timeline" id="timeline"></div></main>
 
 <div class="modal" id="modal"><div class="box">
 <h2 id="modalTitle">Nový úkol</h2>
-<label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?">
+<label>Datum</label><input id="taskDate" type="date"><label>Úkol</label><input id="title" placeholder="Co potřebuješ udělat?">
 <div class="row"><div><label>Začátek</label><select id="start"></select></div><div><label>Délka</label><select id="duration"><option value="15">15 min</option><option value="30">30 min</option><option value="45">45 min</option><option value="60">1 hodina</option><option value="90">1,5 hodiny</option><option value="120">2 hodiny</option><option value="150">2,5 hodiny</option><option value="180">3 hodiny</option></select></div></div>
 <label>Barva</label><select id="color"><option value="#2563eb">Práce</option><option value="#16a34a">Osobní</option><option value="#9333ea">Důležité</option><option value="#ea580c">Schůzka</option></select>
 <label>Poznámka</label><textarea id="note"></textarea>
@@ -46,7 +46,6 @@ function esc(s){return String(s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",
 
 function render(){
  $("currentLabel").textContent=label(selectedDate);
- $("datePicker").value=key(selectedDate);
 
  // Show the selected week around the chosen date, with the selected day highlighted.
  const monday=new Date(selectedDate); monday.setDate(monday.getDate()-((monday.getDay()+6)%7));
@@ -75,13 +74,13 @@ function render(){
 
 function openNew(start=480){
  edit=null;$("modalTitle").textContent="Nový úkol";$("delete").style.display="none";
- $("title").value="";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
+ $("taskDate").value=key(selectedDate);$("title").value="";$("note").value="";$("start").value=start;$("duration").value=60;$("color").value="#2563eb";
  $("modal").classList.add("show");setTimeout(()=>$("title").focus(),50);
 }
 function openEdit(id){
  let t=tasks.find(x=>x.id===id);if(!t)return;
  edit=id;$("modalTitle").textContent="Upravit úkol";$("delete").style.display="block";
- $("title").value=t.title;$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
+ $("taskDate").value=t.date;$("title").value=t.title;$("note").value=t.note||"";$("start").value=t.start;$("duration").value=t.duration;$("color").value=t.color;
  $("modal").classList.add("show");
 }
 function close(){$("modal").classList.remove("show")}
