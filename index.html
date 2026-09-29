@@ -22,7 +22,7 @@ main{max-width:1120px;margin:auto;padding:18px}
 .calendar{background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
 .calhead{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin-bottom:10px}
 .calhead h2{text-align:center;font-size:18px;letter-spacing:-.25px;margin:0;text-transform:capitalize}
-.calnav{display:flex;gap:5px;justify-content:flex-end}.calnav button{min-width:40px;padding:8px 11px;font-size:18px;line-height:1}
+.calnav{display:flex;gap:5px;justify-content:flex-end}.calnav button,#today{min-width:40px;width:40px;height:40px;padding:0;font-size:13px;line-height:1;display:flex;align-items:center;justify-content:center}
 .weeknames,.grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}
 .weeknames div{text-align:center;color:var(--muted);font-size:10px;font-weight:600;padding:5px 0;text-transform:uppercase;letter-spacing:.2px}
 .day{min-width:0;min-height:58px;padding:8px 4px;border-radius:12px;background:rgba(118,118,128,.08);display:flex;flex-direction:column;align-items:center;justify-content:flex-start;gap:4px;color:var(--text)}
@@ -30,9 +30,9 @@ main{max-width:1120px;margin:auto;padding:18px}
 .day.selected{background:var(--blue);color:#fff;box-shadow:0 4px 12px rgba(0,122,255,.2)}
 .day.selected .count{color:rgba(255,255,255,.85)}
 .daynum{font-weight:600;font-size:14px}.count{font-size:9px;color:var(--muted);line-height:1}
-.summary{display:grid;grid-template-columns:repeat(3,1fr);gap:9px;margin-bottom:14px}
-.pill{background:var(--card);border:1px solid rgba(0,0,0,.06);border-radius:14px;padding:10px 12px;text-align:center;box-shadow:0 3px 14px rgba(0,0,0,.035);color:var(--muted);font-size:11px}
-.pill b{display:block;color:var(--text);font-size:16px;margin-bottom:2px;letter-spacing:-.2px}
+
+
+
 .timeline{position:relative;background:var(--card);border:1px solid rgba(0,0,0,.06);border-radius:18px;overflow:hidden;height:840px;box-shadow:var(--shadow)}
 .hour{height:120px;border-bottom:1px solid rgba(60,60,67,.10);position:relative}.hour:last-child{border-bottom:0}
 .hour span{position:absolute;left:10px;top:7px;color:var(--muted);font-size:10px;font-weight:600;width:40px}
@@ -49,7 +49,7 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
   header{padding:13px 14px}.head h1{font-size:19px}main{padding:12px}#syncStatus{display:none}#authBtn{max-width:120px;overflow:hidden;text-overflow:ellipsis}
   .calendar{padding:10px;border-radius:16px}.day{min-height:54px;padding-top:7px}
   .timeline{height:840px;border-radius:16px}.task{left:58px;right:8px;padding:8px 10px}
-  .summary{gap:7px}.pill{padding:9px 5px}
+  
 }
 @media(min-width:700px){.modal{align-items:center}.box{border-radius:20px}}
 </style>
@@ -73,11 +73,6 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
     <div class="grid" id="calendarGrid"></div>
   </section>
 
-  <div class="summary">
-    <div class="pill"><b id="planned">0 h</b> naplánováno</div>
-    <div class="pill"><b id="free">7 h</b> volno</div>
-    <div class="pill"><b id="done">0</b> hotovo</div>
-  </div>
   <div class="timeline" id="timeline"></div>
 </main>
 
@@ -232,7 +227,6 @@ function render(){
     tl.appendChild(g);
   }
   let total=dayTasks.reduce((a,t)=>a+t.duration,0);
-  $("planned").textContent=fmt(total);$("free").textContent=fmt(Math.max(0,420-total));$("done").textContent=dayTasks.filter(t=>t.done).length;
 }
 
 function openNew(start=480){
