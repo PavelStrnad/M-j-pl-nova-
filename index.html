@@ -219,11 +219,21 @@ async function sendTestNotification(){
 }
 
 async function refreshNotificationState(){
-  if(!currentUser){$("notifyBtn").textContent="🔔 Upozornění";$("notifyBtn").classList.remove("on");return}
+  const testBtn=$("testNotifyBtn");
+  if(!currentUser){
+    $("notifyBtn").textContent="🔔 Upozornění";
+    $("notifyBtn").classList.remove("on");
+    testBtn.style.display="none";
+    return;
+  }
   if("Notification" in window && Notification.permission === "granted"){
-    $("notifyBtn").textContent="🔔 Zapnuto";$("notifyBtn").classList.add("on");
+    $("notifyBtn").textContent="🔔 Zapnuto";
+    $("notifyBtn").classList.add("on");
+    testBtn.style.display="inline-block";
   }else{
-    $("notifyBtn").textContent="🔔 Upozornění";$("notifyBtn").classList.remove("on");
+    $("notifyBtn").textContent="🔔 Upozornění";
+    $("notifyBtn").classList.remove("on");
+    testBtn.style.display="none";
   }
 }
 
@@ -397,6 +407,7 @@ $("timeline").ondblclick=e=>{
 
 render();
 refreshNotificationState();
+window.addEventListener("pageshow",()=>refreshNotificationState());
 startNowClock();
 if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js");
 </script>

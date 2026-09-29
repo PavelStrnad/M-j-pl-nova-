@@ -1,4 +1,4 @@
-const CACHE="muj-plan-v17";
+const CACHE="muj-plan-v19";
 
 self.addEventListener("install",event=>{
   event.waitUntil(
