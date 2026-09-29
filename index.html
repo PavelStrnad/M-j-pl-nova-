@@ -16,7 +16,7 @@ header{background:rgba(255,255,255,.82);backdrop-filter:saturate(180%) blur(20px
 .head h1{font-size:21px;letter-spacing:-.35px;margin:0;font-weight:700}.head small{color:var(--muted);font-size:12px}
 button{border:0;border-radius:11px;padding:10px 14px;font-weight:600;font-size:14px;background:#e9e9ee;color:var(--text);cursor:pointer;transition:.15s transform,.15s background}
 button:active{transform:scale(.97)}
-#authBtn{background:rgba(118,118,128,.10);white-space:nowrap}#notifyBtn{background:rgba(118,118,128,.10);white-space:nowrap}#notifyBtn.on{background:rgba(52,199,89,.12);color:#248a3d}#authBtn.signed{background:rgba(52,199,89,.12);color:#248a3d}#syncStatus{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#authBtn{background:rgba(118,118,128,.10)}#notifyBtn{background:rgba(118,118,128,.10)}#testNotifyBtn{background:rgba(118,118,128,.10)}#authBtn,#notifyBtn,#testNotifyBtn{width:42px;height:42px;padding:0;display:inline-flex;align-items:center;justify-content:center;font-size:19px;line-height:1;white-space:nowrap}#notifyBtn.on{background:rgba(52,199,89,.12);color:#248a3d}#authBtn.signed{background:rgba(52,199,89,.12);color:#248a3d}#syncStatus{color:var(--muted);font-size:10px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .primary{background:var(--blue);color:white;box-shadow:0 2px 8px rgba(0,122,255,.22)}
 main{max-width:1120px;margin:auto;padding:18px}
 .calendar{background:var(--card);backdrop-filter:blur(18px);-webkit-backdrop-filter:blur(18px);border:1px solid rgba(0,0,0,.06);border-radius:18px;padding:14px;margin-bottom:14px;box-shadow:var(--shadow)}
@@ -46,7 +46,7 @@ main{max-width:1120px;margin:auto;padding:18px}
 label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6px}input,select,textarea{width:100%;padding:11px 12px;border:1px solid #d2d2d7;border-radius:10px;background:#f9f9fb;color:var(--text);font:inherit;outline:none}input:focus,select:focus,textarea:focus{border-color:var(--blue);box-shadow:0 0 0 3px rgba(0,122,255,.12)}textarea{min-height:65px;resize:vertical}
 .row{display:grid;grid-template-columns:1fr 1fr;gap:10px}.actions{display:flex;justify-content:space-between;margin-top:18px}.danger{background:#ffe5e5;color:#d70015}
 @media(max-width:600px){
-  header{padding:13px 14px}.head h1{font-size:19px}main{padding:12px}#syncStatus{display:none}#authBtn,#notifyBtn{max-width:120px;overflow:hidden;text-overflow:ellipsis}
+  header{padding:13px 14px}.head h1{font-size:19px}main{padding:12px}#syncStatus{display:none}#authBtn,#notifyBtn,#testNotifyBtn{max-width:none;overflow:visible;text-overflow:clip}
   .calendar{padding:10px;border-radius:16px}.day{min-height:54px;padding-top:7px}
   .timeline{height:960px;border-radius:16px}.task{left:58px;right:8px;padding:8px 10px}
   
@@ -58,7 +58,7 @@ label{display:block;font-size:11px;font-weight:600;color:#6e6e73;margin:12px 0 6
 <header>
   <div class="head">
     <div><h1>📅 Můj plán</h1><small id="currentLabel">Dnes</small></div>
-    <div style="display:flex;align-items:center;gap:8px"><small id="syncStatus" style="max-width:180px;text-align:right">Pouze toto zařízení</small><button id="notifyBtn">🔔 Upozornění</button><button id="testNotifyBtn" style="display:none">🧪 Test</button><button id="authBtn">Přihlásit Google</button><button class="primary" id="new">＋ Úkol</button></div>
+    <div style="display:flex;align-items:center;gap:8px"><small id="syncStatus" style="max-width:180px;text-align:right">Pouze toto zařízení</small><button id="notifyBtn" aria-label="Upozornění" title="Upozornění">🔔</button><button id="testNotifyBtn" style="display:none" aria-label="Odeslat testovací upozornění" title="Odeslat testovací upozornění">🧪</button><button id="authBtn" aria-label="Přihlásit Google" title="Přihlásit Google">🔒</button><button class="primary" id="new">＋ Úkol</button></div>
   </div>
 </header>
 
@@ -135,7 +135,7 @@ function saveLocal(){localStorage.setItem("myplan",JSON.stringify(tasks))}
 function taskRef(id){return doc(db,"users",currentUser.uid,"tasks",String(id))}
 async function cloudSet(t){if(!currentUser||!cloudReady)return;await setDoc(taskRef(t.id),t)}
 async function cloudDelete(id){if(!currentUser||!cloudReady)return;await deleteDoc(taskRef(id))}
-function setSync(text, signed=false){$("syncStatus").textContent=text;$("authBtn").classList.toggle("signed",signed)}
+function setSync(text){$("syncStatus").textContent=text}
 
 
 function urlBase64ToUint8Array(base64String){
@@ -190,7 +190,9 @@ async function enableNotifications(){
       createdAt:Date.now(),
       updatedAt:Date.now()
     },{merge:true});
-    $("notifyBtn").textContent="🔔 Zapnuto";
+    $("notifyBtn").textContent="🔔";
+    $("notifyBtn").title="Upozornění zapnuta";
+    $("notifyBtn").setAttribute("aria-label","Upozornění zapnuta");
     $("notifyBtn").classList.add("on");
     setSync("Upozornění zapnuta",true);
     $("testNotifyBtn").style.display="inline-block";
@@ -221,20 +223,35 @@ async function sendTestNotification(){
 async function refreshNotificationState(){
   const testBtn=$("testNotifyBtn");
   if(!currentUser){
-    $("notifyBtn").textContent="🔔 Upozornění";
+    $("notifyBtn").textContent="🔔";
+    $("notifyBtn").title="Upozornění";
+    $("notifyBtn").setAttribute("aria-label","Upozornění");
     $("notifyBtn").classList.remove("on");
     testBtn.style.display="none";
     return;
   }
-  if("Notification" in window && Notification.permission === "granted"){
-    $("notifyBtn").textContent="🔔 Zapnuto";
-    $("notifyBtn").classList.add("on");
-    testBtn.style.display="inline-block";
-  }else{
-    $("notifyBtn").textContent="🔔 Upozornění";
-    $("notifyBtn").classList.remove("on");
-    testBtn.style.display="none";
+  if("Notification" in window && Notification.permission === "granted" && "serviceWorker" in navigator && "PushManager" in window){
+    try{
+      const swReg=await navigator.serviceWorker.register("sw.js");
+      await navigator.serviceWorker.ready;
+      const subscription=await swReg.pushManager.getSubscription();
+      if(subscription){
+        $("notifyBtn").textContent="🔔";
+        $("notifyBtn").title="Upozornění zapnuta";
+        $("notifyBtn").setAttribute("aria-label","Upozornění zapnuta");
+        $("notifyBtn").classList.add("on");
+        testBtn.style.display="inline-block";
+        return;
+      }
+    }catch(e){
+      console.warn("Nelze ověřit Push subscription:",e);
+    }
   }
+  $("notifyBtn").textContent="🔔";
+  $("notifyBtn").title="Upozornění";
+  $("notifyBtn").setAttribute("aria-label","Upozornění");
+  $("notifyBtn").classList.remove("on");
+  testBtn.style.display="none";
 }
 
 $("notifyBtn").onclick=enableNotifications;
@@ -255,8 +272,9 @@ $("authBtn").onclick=async()=>{
 onAuthStateChanged(auth,async user=>{
   if(stopSync){stopSync();stopSync=null}
   currentUser=user;cloudReady=false;
-  if(!user){setSync("Pouze toto zařízení");$("authBtn").textContent="Přihlásit Google";render();return}
-  $("authBtn").textContent="Odhlásit";
+  if(!user){setSync("Pouze toto zařízení");$("authBtn").textContent="🔒";$("authBtn").title="Přihlásit Google";$("authBtn").setAttribute("aria-label","Přihlásit Google");$("authBtn").classList.remove("signed");render();await refreshNotificationState();return}
+  $("authBtn").textContent="🔒";$("authBtn").title="Odhlásit";$("authBtn").setAttribute("aria-label","Odhlásit");$("authBtn").classList.add("signed");
+  await refreshNotificationState();
   setSync("Synchronizuji…",true);
   try{
     const col=collection(db,"users",user.uid,"tasks");
