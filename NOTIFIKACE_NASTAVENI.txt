@@ -1,14 +1,10 @@
 MŮJ PLÁN – PUSH NOTIFIKACE
 
-1) Ve Firebase otevři Project settings → Cloud Messaging → Web Push certificates.
-2) Klikni Generate key pair. Zkopíruj PUBLIC VAPID KEY. Soukromý klíč nikam neposílej.
-3) Ve frontendovém index.html nahraď VAPID_PUBLIC_KEY_HERE tímto veřejným klíčem.
-4) Na PC v kořenu této složky spusť:
-   npm install -g firebase-tools
-   firebase login
-   firebase deploy --only functions,firestore
-5) Firebase Cloud Functions + plánované funkce vyžadují Blaze billing. Nastav si v Google Cloud/Firebase rozpočet a upozornění na náklady.
-6) Na iPhonu otevři webovou aplikaci PŘIDANOU NA PLOCHU, přihlas Google a klepni na 🔔 Upozornění. Povol oznámení.
-7) Při vytvoření úkolu vyber Připomenout: 5/10/15/30/60 min předem.
-
-Poznámka: samotná webová push notifikace na iPhonu funguje pro Home Screen web apps v iOS/iPadOS 16.4+.
+1) Firebase: Project settings → Cloud Messaging → Web Push certificates → Generate key pair.
+2) Do index.html je už vložen veřejný VAPID key. Private key nikam neposílej.
+3) Firebase → Authentication: Google musí být Enabled.
+4) Firebase → Firestore Database: databáze musí být vytvořená a pravidla publikovaná.
+5) Ve Firebase je potřeba zapnout billing/Blaze pro Cloud Functions. Doporučuji nastavit budget alerts.
+6) Na PC v kořenu projektu spusť: npm install -g firebase-tools ; firebase login ; firebase deploy --only functions,firestore
+7) iPhone: aplikaci přidej na plochu, přihlas Google, klikni 🔔 Upozornění a povol oznámení.
+8) U úkolu vyber připomenutí (5/10/15/30/60 min předem). Funkce kontroluje připomínky každou minutu.
